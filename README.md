@@ -4,9 +4,16 @@ Backendová aplikace pro ovládání spotřebičů podle pokojů a zpracování 
 
 Projekt poskytuje:
 - autorizační tok pro operace se spotřebiči založený na JWT/TOTP
+<<<<<<< HEAD
 - endpointy pro životní cyklus spotřebiče (`start` / `finish`)
 - evidenci a účtování zůstatku pokojů
 - ingest bankovních transakcí a dobíjení pokojů
+=======
+- logování cyklů spotřebičů
+- komunikaci s endpointy ovládající cyklus spotřebiče (`start` / `finish`)
+- evidenci a účtování zůstatku pokojů
+- ingest bankovních transakcí a dobíjení pokojů To Do
+>>>>>>> a4d79aee090beebb3854e1e9cee5bd5ac2407ea4
 - persistenci v PostgreSQL a volitelný lokální setup přes Docker
 
 ---
@@ -62,7 +69,7 @@ Business služby:
 - `ApplianceServiceFactory`
   - načte stav endpoint/spotřebič a vytvoří `ApplianceService`
 
-### 3.2 `bank_module`
+### 3.2 `bank_module` Není doděláno
 
 Modely:
 - `ValidPayments`: známý klíč pokoje + částka + id transakce
@@ -77,7 +84,11 @@ Servisní funkce:
 
 ### 3.3 `api`
 
+<<<<<<< HEAD
 Obsahuje DRF APIView a serializéry, které vystavují autentizaci a operace se spotřebiči.
+=======
+Obsahuje DRF APIView a serializéry, které vystavují autentizaci a operace se endpointy.
+>>>>>>> a4d79aee090beebb3854e1e9cee5bd5ac2407ea4
 
 ---
 
@@ -294,11 +305,18 @@ Služby:
 
 ## 10. Známé problémy / nehotové části
 
+<<<<<<< HEAD
 1. `AuthService.encode(..., "start", ...)` aktuálně odkazuje na `units` bez definice této proměnné v daném scope metody.
 2. `bank_module/data_getter.py` je prázdný, i když Celery schedule odkazuje na `bank_module.data_getter.fetch_data_from_api`.
 3. `debug/celery.py` je prázdný, ale projekt importuje `debug.celery` v `debug/__init__.py`.
 4. `Dockerfile` očekává `requirements.txt`, ale závislosti jsou v `pozadavky.txt`.
 5. Secrets/keys jsou hardcoded v `debug/settings.py` a pro produkci by měly být přesunuty do proměnných prostředí.
+=======
+2. `bank_module/data_getter.py` je prázdný, i když Celery schedule odkazuje na `bank_module.data_getter.fetch_data_from_api`. zakomentovano
+3. `debug/celery.py` je prázdný, ale projekt importuje `debug.celery` v `debug/__init__.py`. zakomentovano
+4. `Dockerfile` očekává `requirements.txt`, ale závislosti jsou v `pozadavky.txt`. upravit/dockerfile neni soucasti finalniho reseni projektu
+5. Secrets/keys jsou hardcoded v `debug/settings.py` a pro produkci by měly být přesunuty do proměnných prostředí. !!!!!!!!!!!!!!!!!!!
+>>>>>>> a4d79aee090beebb3854e1e9cee5bd5ac2407ea4
 
 ---
 
@@ -329,8 +347,10 @@ python manage.py runserver
 python manage.py test
 ```
 
----
 
+<<<<<<< HEAD
 ## 13. Licence
 
 V tomto repozitáři aktuálně není přítomen soubor s licencí.
+=======
+>>>>>>> a4d79aee090beebb3854e1e9cee5bd5ac2407ea4
