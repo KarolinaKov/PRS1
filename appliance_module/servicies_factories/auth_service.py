@@ -37,7 +37,7 @@ class AuthService:
         except jwt.InvalidTokenError:
             raise ValueError("Invalid token")
     @staticmethod
-    def encode(old_payload, case, units=0):
+    def encode(old_payload, case, dict={}):
         match case:
             case "challenge":
                 payload = {
@@ -53,6 +53,7 @@ class AuthService:
                     "token_type": "start",
                     "room_num": old_payload["room_num"],
                     "endpoint_id": old_payload["endpoint_id"],
+                    "appliance_name": old_payload["appliance_name"],
                     #timedelta is set to units + 1 minute for possible delays between start and finish requests
-                    "exp": int((datetime.now() + timedelta(seconds=60+units)).timestamp())}
+                    "exp": int((datetime.now() + timedelta(seconds=60+dict["units"])).timestamp())}
                 return jwt.encode(payload, settings.SIMPLE_JWT["SIGNING_KEY"], algorithm=settings.SIMPLE_JWT["ALGORITHM"])
