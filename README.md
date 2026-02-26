@@ -4,9 +4,10 @@ Backendová aplikace pro ovládání spotřebičů podle pokojů a zpracování 
 
 Projekt poskytuje:
 - autorizační tok pro operace se spotřebiči založený na JWT/TOTP
-- endpointy pro životní cyklus spotřebiče (`start` / `finish`)
+- logování cyklů spotřebičů
+- komunikaci s endpointy ovládající cyklus spotřebiče (`start` / `finish`)
 - evidenci a účtování zůstatku pokojů
-- ingest bankovních transakcí a dobíjení pokojů
+- ingest bankovních transakcí a dobíjení pokojů To Do
 - persistenci v PostgreSQL a volitelný lokální setup přes Docker
 
 ---
@@ -62,7 +63,7 @@ Business služby:
 - `ApplianceServiceFactory`
   - načte stav endpoint/spotřebič a vytvoří `ApplianceService`
 
-### 3.2 `bank_module`
+### 3.2 `bank_module` Není doděláno
 
 Modely:
 - `ValidPayments`: známý klíč pokoje + částka + id transakce
@@ -77,7 +78,7 @@ Servisní funkce:
 
 ### 3.3 `api`
 
-Obsahuje DRF APIView a serializéry, které vystavují autentizaci a operace se spotřebiči.
+Obsahuje DRF APIView a serializéry, které vystavují autentizaci a operace se endpointy.
 
 ---
 
@@ -294,11 +295,10 @@ Služby:
 
 ## 10. Známé problémy / nehotové části
 
-1. `AuthService.encode(..., "start", ...)` aktuálně odkazuje na `units` bez definice této proměnné v daném scope metody.
-2. `bank_module/data_getter.py` je prázdný, i když Celery schedule odkazuje na `bank_module.data_getter.fetch_data_from_api`.
-3. `debug/celery.py` je prázdný, ale projekt importuje `debug.celery` v `debug/__init__.py`.
-4. `Dockerfile` očekává `requirements.txt`, ale závislosti jsou v `pozadavky.txt`.
-5. Secrets/keys jsou hardcoded v `debug/settings.py` a pro produkci by měly být přesunuty do proměnných prostředí.
+2. `bank_module/data_getter.py` je prázdný, i když Celery schedule odkazuje na `bank_module.data_getter.fetch_data_from_api`. zakomentovano
+3. `debug/celery.py` je prázdný, ale projekt importuje `debug.celery` v `debug/__init__.py`. zakomentovano
+4. `Dockerfile` očekává `requirements.txt`, ale závislosti jsou v `pozadavky.txt`. upravit/dockerfile neni soucasti finalniho reseni projektu
+5. Secrets/keys jsou hardcoded v `debug/settings.py` a pro produkci by měly být přesunuty do proměnných prostředí. !!!!!!!!!!!!!!!!!!!
 
 ---
 
