@@ -70,7 +70,7 @@ class ApplianceStartView(APIView):
                 endpoint_id = token_payload["endpoint_id"]
             )
             remaining =service.start(room_num=token_payload["room_num"], units=data["units"], price = 100*data["price"])
-            token = AuthService.encode(token_payload, "start", data["units"])
+            token = AuthService.encode(token_payload, "start", data)
 
             return Response(
                     {

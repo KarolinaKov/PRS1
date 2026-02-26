@@ -1,95 +1,95 @@
 # Debug Backend (Django + DRF)
 
-Backend application for room-based appliance control and payment handling.
+Backendová aplikace pro ovládání spotřebičů podle pokojů a zpracování plateb.
 
-The project provides:
-- JWT/TOTP-based authorization flow for appliance operations
-- Appliance lifecycle endpoints (`start` / `finish`)
-- Room balance accounting
-- Bank transaction ingestion and room top-ups
-- PostgreSQL persistence and optional Docker-based local setup
+Projekt poskytuje:
+- autorizační tok pro operace se spotřebiči založený na JWT/TOTP
+- endpointy pro životní cyklus spotřebiče (`start` / `finish`)
+- evidenci a účtování zůstatku pokojů
+- ingest bankovních transakcí a dobíjení pokojů
+- persistenci v PostgreSQL a volitelný lokální setup přes Docker
 
 ---
 
-## 1. Tech Stack
+## 1. Technologický stack
 
 - Python 3.13
 - Django 5.2
 - Django REST Framework
 - JWT (`PyJWT`, `djangorestframework_simplejwt`)
 - PostgreSQL (`psycopg2-binary`)
-- Celery + Redis (configured, not yet used)
+- Celery + Redis (nakonfigurováno, zatím nepoužito)
 
 
-Dependencies are listed in `pozadavky.txt`.
+Závislosti jsou uvedené v `pozadavky.txt`.
 
 ---
 
-## 2. Repository Structure
+## 2. Struktura repozitáře
 
 ```text
 .
-├─ api/                    # REST API endpoints and serializers
-├─ appliance_module/       # Core domain: rooms, appliances, endpoints, runs, auth services
-├─ bank_module/            # Payment models and room top-up logic
-├─ debug/                  # Django project config (settings, urls, celery init)
+├─ api/                    # REST API endpointy a serializéry
+├─ appliance_module/       # Jádro domény: pokoje, spotřebiče, endpointy, běhy, auth služby
+├─ bank_module/            # Platební modely a logika dobíjení pokojů
+├─ debug/                  # Konfigurace Django projektu (settings, urls, celery init)
 ├─ manage.py
-└─ pozadavky.txt           # Python dependencies
+└─ pozadavky.txt           # Python závislosti
 ```
 
 ---
 
-## 3. Domain Overview
+## 3. Přehled domény
 
 ### 3.1 `appliance_module`
 
-Core models:
-- `Room`: room identifier (`key`) + integer balance (stored in cents)
-- `Endpoint`: endpoint device metadata and mutable token version
-- `Appliance`: appliance catalog with `name` + `price_per_unit`
-- `RoomTOTP`: per-room TOTP secret used for authorization verification
-- `RunsLog`: appliance run lifecycle (running/finished/aborted), initial/final units/price
-- `EndpointApplianceStateRoom`: occupancy state for (`endpoint`, `appliance`) pair
+Hlavní modely:
+- `Room`: identifikátor pokoje (`key`) + celočíselný zůstatek (uložený v haléřích)
+- `Endpoint`: metadata endpoint zařízení a měnitelná verze tokenu
+- `Appliance`: katalog spotřebičů s `name` + `price_per_unit`
+- `RoomTOTP`: TOTP secret pro konkrétní pokoj používaný pro ověření autorizace
+- `RunsLog`: životní cyklus běhu spotřebiče (running/finished/aborted), počáteční/konečné jednotky/cena
+- `EndpointApplianceStateRoom`: stav obsazenosti pro dvojici (`endpoint`, `appliance`)
 
-Business services:
+Business služby:
 - `AuthService`
-  - creates short-lived challenge token
-  - validates TOTP code and returns access token
-  - verifies JWT tokens
+  - vytváří krátkodobý challenge token
+  - validuje TOTP kód a vrací access token
+  - ověřuje JWT tokeny
 - `ApplianceService`
-  - `start(...)`: validates state, withdraws balance, opens run log, occupies state
-  - `finish(...)`: finalizes run, refunds difference if needed, frees state
+  - `start(...)`: validuje stav, strhne zůstatek, založí run log, nastaví obsazenost
+  - `finish(...)`: dokončí běh, vrátí rozdíl ceny (pokud je třeba), uvolní stav
 - `ApplianceServiceFactory`
-  - resolves endpoint/appliance state and builds `ApplianceService`
+  - načte stav endpoint/spotřebič a vytvoří `ApplianceService`
 
 ### 3.2 `bank_module`
 
-Models:
-- `ValidPayments`: known room key + amount + transaction id
-- `InvalidPayments`: unknown/invalid room or currency transaction records
+Modely:
+- `ValidPayments`: známý klíč pokoje + částka + id transakce
+- `InvalidPayments`: záznamy transakcí s neznámým/neplatným pokojem nebo měnou
 
-Service function:
+Servisní funkce:
 - `update_rooms_from_json(json_str)`
-  - parses transaction payload
-  - deduplicates transaction IDs against both payment tables
-  - applies deposits to matched rooms (atomic transaction)
-  - stores valid/invalid payment rows
+  - parsuje payload transakcí
+  - deduplikuje ID transakcí proti oběma platebním tabulkám
+  - aplikuje vklady do odpovídajících pokojů (atomická transakce)
+  - ukládá validní/nevalidní platební záznamy
 
 ### 3.3 `api`
 
-Contains DRF APIViews and serializers exposing authentication and appliance operations.
+Obsahuje DRF APIView a serializéry, které vystavují autentizaci a operace se spotřebiči.
 
 ---
 
-## 4. API Endpoints
+## 4. API endpointy
 
-Base path: `/api/`
+Základní cesta: `/api/`
 
 ### 4.1 `POST /api/auth/challenge/`
 
-Creates a short-lived challenge token for room + endpoint pair.
+Vytvoří krátkodobý challenge token pro dvojici pokoj + endpoint.
 
-Request:
+Požadavek:
 ```json
 {
   "room_num": 12345,
@@ -97,7 +97,7 @@ Request:
 }
 ```
 
-Response `200`:
+Odpověď `200`:
 ```json
 {
   "token": "<challenge_jwt>"
@@ -108,9 +108,9 @@ Response `200`:
 
 ### 4.2 `POST /api/auth/verify/`
 
-Verifies challenge token and TOTP code, then returns access token + balance + appliance list.
+Ověří challenge token a TOTP kód, potom vrátí access token + zůstatek + seznam spotřebičů.
 
-Request:
+Požadavek:
 ```json
 {
   "token": "<challenge_jwt>",
@@ -118,7 +118,7 @@ Request:
 }
 ```
 
-Response `200`:
+Odpověď `200`:
 ```json
 {
   "token": "<access_jwt>",
@@ -133,9 +133,9 @@ Response `200`:
 
 ### 4.3 `POST /api/appliance/start/`
 
-Starts appliance run and reserves funds.
+Spustí běh spotřebiče a rezervuje prostředky.
 
-Request:
+Požadavek:
 ```json
 {
   "token": "<access_jwt>",
@@ -145,7 +145,7 @@ Request:
 }
 ```
 
-Response `201`:
+Odpověď `201`:
 ```json
 {
   "newbalance": 98000,
@@ -153,16 +153,16 @@ Response `201`:
 }
 ```
 
-Notes:
-- API multiplies `price` by 100 internally.
+Poznámky:
+- API interně násobí `price` hodnotou 100.
 
 ---
 
 ### 4.4 `POST /api/appliance/finish/`
 
-Finalizes a run and applies refund (if final price is lower than reserved price).
+Dokončí běh a aplikuje vrácení prostředků (pokud je konečná cena nižší než rezervovaná).
 
-Request:
+Požadavek:
 ```json
 {
   "token": "<start_jwt>",
@@ -172,7 +172,7 @@ Request:
 }
 ```
 
-Response `200`:
+Odpověď `200`:
 ```json
 {
   "status": "finished"
@@ -181,20 +181,20 @@ Response `200`:
 
 ---
 
-## 5. Configuration
+## 5. Konfigurace
 
-Current settings are in `debug/settings.py`.
+Aktuální nastavení je v `debug/settings.py`.
 
-Important values:
+Důležité hodnoty:
 - `ALLOWED_HOSTS = ["localhost", "127.0.0.1"]`
-- PostgreSQL database config points to `localhost:5432`
-- `SIMPLE_JWT` uses hardcoded signing key and 5-minute access token lifetime
-- Celery broker/backend configured as `redis://localhost:6379/0`
-- Time zone is `Europe/Prague`
+- konfigurace PostgreSQL databáze ukazuje na `localhost:5432`
+- `SIMPLE_JWT` používá hardcoded signing key a 5minutovou životnost access tokenu
+- Celery broker/backend je nastaven na `redis://localhost:6379/0`
+- časová zóna je `Europe/Prague`
 
-### 5.1 Recommended `.env` (for Docker compose)
+### 5.1 Doporučený `.env` (pro Docker compose)
 
-Create `.env` in project root:
+Vytvořte `.env` v kořeni projektu:
 
 ```env
 SECRET_KEY=change-me
@@ -210,127 +210,127 @@ DATABASE_HOST=db
 DATABASE_PORT=5432
 ```
 
-> Note: `debug/settings.py` currently reads DB values directly from hardcoded settings, not from these environment variables.
+> Poznámka: `debug/settings.py` aktuálně čte hodnoty DB přímo z hardcoded nastavení, ne z těchto proměnných prostředí.
 
 ---
 
-## 6. Local Development Setup (without Docker)
+## 6. Lokální vývojové prostředí (bez Dockeru)
 
-1. Create and activate a virtual environment.
-2. Install dependencies:
+1. Vytvořte a aktivujte virtuální prostředí.
+2. Nainstalujte závislosti:
 
    ```bash
    pip install -r pozadavky.txt
    ```
 
-3. Ensure PostgreSQL is running and database/user exist:
+3. Ujistěte se, že PostgreSQL běží a existuje databáze/uživatel:
    - DB: `debug_db`
-   - User: `debug_dbuser`
-   - Password: `debug_dbpassword`
+   - uživatel: `debug_dbuser`
+   - heslo: `debug_dbpassword`
 
-4. Run migrations:
+4. Spusťte migrace:
 
    ```bash
    python manage.py migrate
    ```
 
-5. Start server:
+5. Spusťte server:
 
    ```bash
    python manage.py runserver
    ```
 
-6. Open:
+6. Otevřete:
    - API root: `http://127.0.0.1:8000/api/`
-   - Admin: `http://127.0.0.1:8000/admin/`
+   - admin: `http://127.0.0.1:8000/admin/`
 
 ---
 
-## 7. Docker Setup
+## 7. Docker setup
 
-The repository includes:
+Repozitář obsahuje:
 - `compose.yaml`
 - `Dockerfile`
 
-### 7.1 Current caveat
+### 7.1 Aktuální omezení
 
-`Dockerfile` installs dependencies from `requirements.txt`, but repository uses `pozadavky.txt`.
+`Dockerfile` instaluje závislosti z `requirements.txt`, ale repozitář používá `pozadavky.txt`.
 
-To run Docker successfully, do one of the following:
-- create a `requirements.txt` copy of `pozadavky.txt`, or
-- update `Dockerfile` to use `pozadavky.txt`.
+Aby Docker běžel správně, udělejte jednu z těchto možností:
+- vytvořte `requirements.txt` jako kopii `pozadavky.txt`, nebo
+- upravte `Dockerfile`, aby používal `pozadavky.txt`.
 
-### 7.2 Run with Compose
+### 7.2 Spuštění přes Compose
 
 ```bash
 docker compose up --build
 ```
 
-Services:
-- `db`: PostgreSQL 17 on port `5432`
-- `django-web`: Django app on port `8000`
+Služby:
+- `db`: PostgreSQL 17 na portu `5432`
+- `django-web`: Django aplikace na portu `8000`
 
 ---
 
-## 8. Typical Runtime Flow
+## 8. Typický běhový tok
 
-1. Client requests challenge token (`/auth/challenge/`).
-2. Client verifies challenge with TOTP (`/auth/verify/`) and receives access token.
-3. Client starts appliance (`/appliance/start/`) with reserved units/price.
-4. Backend withdraws funds, creates `RunsLog`, and marks endpoint-appliance state occupied.
-5. Client finishes appliance (`/appliance/finish/`) with final units/price.
-6. Backend finalizes `RunsLog`, refunds price difference (if any), frees state.
-
----
-
-## 9. Data Notes and Conventions
-
-- Balance and payment amounts are stored as integers in cents.
-- Price from API is multiplied by 100 in start/finish handlers.
-- `Room.key` acts as room identifier used by API and payment ingestion (`VS` mapping).
-- Appliance occupancy is modeled per `(endpoint, appliance)` pair.
+1. Klient požádá o challenge token (`/auth/challenge/`).
+2. Klient ověří challenge přes TOTP (`/auth/verify/`) a získá access token.
+3. Klient spustí spotřebič (`/appliance/start/`) s rezervovanými jednotkami/cenou.
+4. Backend strhne prostředky, vytvoří `RunsLog` a označí stav endpoint-spotřebič jako obsazený.
+5. Klient dokončí běh spotřebiče (`/appliance/finish/`) s konečnými jednotkami/cenou.
+6. Backend dokončí `RunsLog`, vrátí rozdíl ceny (pokud existuje) a uvolní stav.
 
 ---
 
-## 10. Known Issues / Incomplete Parts
+## 9. Poznámky ke konvencím dat
 
-1. `AuthService.encode(..., "start", ...)` currently references `units` without defining it in the method scope.
-2. `bank_module/data_getter.py` is empty while Celery schedule points to `bank_module.data_getter.fetch_data_from_api`.
-3. `debug/celery.py` is empty, but project imports `debug.celery` in `debug/__init__.py`.
-4. `Dockerfile` expects `requirements.txt` though dependencies are in `pozadavky.txt`.
-5. Secrets/keys are hardcoded in `debug/settings.py` and should be moved to environment variables for production.
-
----
-
-## 11. Suggested Next Improvements
-
-- Move all secrets and DB settings to environment-based config.
-- Complete Celery app initialization and implement scheduled bank fetch task.
-- Add automated tests for API auth flow and appliance lifecycle.
-- Add DRF schema/OpenAPI generation.
-- Harden exception handling with explicit error types and response structure.
+- Zůstatek a platební částky jsou uložené jako celá čísla v haléřích.
+- Cena z API se ve handlerech `start/finish` násobí 100.
+- `Room.key` funguje jako identifikátor pokoje používaný v API i ingestu plateb (mapování `VS`).
+- Obsazenost spotřebiče je modelovaná pro každou dvojici `(endpoint, appliance)`.
 
 ---
 
-## 12. Useful Commands
+## 10. Známé problémy / nehotové části
+
+1. `AuthService.encode(..., "start", ...)` aktuálně odkazuje na `units` bez definice této proměnné v daném scope metody.
+2. `bank_module/data_getter.py` je prázdný, i když Celery schedule odkazuje na `bank_module.data_getter.fetch_data_from_api`.
+3. `debug/celery.py` je prázdný, ale projekt importuje `debug.celery` v `debug/__init__.py`.
+4. `Dockerfile` očekává `requirements.txt`, ale závislosti jsou v `pozadavky.txt`.
+5. Secrets/keys jsou hardcoded v `debug/settings.py` a pro produkci by měly být přesunuty do proměnných prostředí.
+
+---
+
+## 11. Doporučené další kroky
+
+- Přesunout všechny secrets a DB nastavení do konfigurace přes proměnné prostředí.
+- Dokončit inicializaci Celery aplikace a implementovat plánovaný úkol pro načítání bankovních dat.
+- Přidat automatizované testy pro auth flow API a životní cyklus spotřebiče.
+- Přidat generování DRF schema/OpenAPI.
+- Zpřesnit exception handling pomocí explicitních typů chyb a jednotné struktury odpovědí.
+
+---
+
+## 12. Užitečné příkazy
 
 ```bash
-# Migrations
+# Migrace
 python manage.py makemigrations
 python manage.py migrate
 
-# Create admin user
+# Vytvoření admin uživatele
 python manage.py createsuperuser
 
-# Run dev server
+# Spuštění vývojového serveru
 python manage.py runserver
 
-# Run tests
+# Spuštění testů
 python manage.py test
 ```
 
 ---
 
-## 13. License
+## 13. Licence
 
-No license file is present in this repository.
+V tomto repozitáři aktuálně není přítomen soubor s licencí.

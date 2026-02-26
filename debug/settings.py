@@ -50,13 +50,13 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {"ACCESS_TOKEN_LIFETIME": timedelta(minutes = 5),
               "ALGORITHM": "HS256",
               "SIGNING_KEY": "tohlenedelej",}
-CELERY_BEAT_SCHEDULE = {
-    'fetch-api-data-every-30-seconds': {
-        'task': 'bank_module.data_getter.fetch_data_from_api',
-        'schedule': 30.0,
-        'args': ('http://example.com/api/data',)
-    },
-}
+#CELERY_BEAT_SCHEDULE = {
+#    'fetch-api-data-every-30-seconds': {
+#        'task': 'bank_module.data_getter.fetch_data_from_api',
+#        'schedule': 30.0,
+#       'args': ('http://example.com/api/data',)
+#   },
+#}
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
